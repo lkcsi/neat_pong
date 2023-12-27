@@ -41,13 +41,13 @@ class Game:
         left_text = self.SCORE_FONT.render(f'{stats.left_score}', 1, self.BLACK)
         right_text = self.SCORE_FONT.render(f'{stats.right_score}', 1, self.BLACK)
 
-        self.win.blit(left_text, (self.width//4 - left_text.get_width()//2, 20))
-        self.win.blit(right_text, (self.width//4*3 - right_text.get_width()//2, 20))
+        self.win.blit(left_text, (self.width // 4 - left_text.get_width() // 2, 20))
+        self.win.blit(right_text, (self.width // 4 * 3 - right_text.get_width() // 2, 20))
 
     def _draw_hits(self):
         stats = self.game_stats
         text = self.SCORE_FONT.render(f'{stats.left_hit + stats.right_hit}', 1, self.BLACK)
-        self.win.blit(text, (self.width//2 - text.get_width()//2, 20))
+        self.win.blit(text, (self.width // 2 - text.get_width() // 2, 20))
 
     def draw(self, hits=False):
         self.win.fill(self.WHITE)
@@ -118,7 +118,7 @@ class Game:
         left_paddle = self.left_paddle
         right_paddle = self.right_paddle
 
-        if(ball.bottom() >= self.height or ball.top() <= 0):
+        if(ball.top() >= self.height or ball.bottom() <= 0):
             ball.y_vel *= -1
 
         if(ball.x_vel < 0):

@@ -1,5 +1,6 @@
 import pygame, neat, os
 from game import Game
+from paddle import Paddle
 import pickle
 from game_stats import GameStats
 
@@ -28,84 +29,54 @@ class PongGame:
         if keys[pygame.K_SPACE]:
             game.start_ball()
 
-    def play(self):
+    def handle_ai(self, paddle:Paddle, net, handle):
+        output = net.activate((paddle.y, self.ball.y, abs(paddle.x - self.ball.x)))
+        decision = output.index(max(output))
+        if decision == 1: handle(True)
+        elif decision == 2: handle(False)
+
+    def play(self, fps=60, display=True, left_net=None, right_net=None, end_condition=lambda : False):
         game = self.game
         clock = pygame.time.Clock()
-        run = True
-        while(run):
-            clock.tick(self.FPS)
+        while(not end_condition()):
+            if fps > 0:
+                clock.tick(fps)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    run = False
-                    break
+                    return
 
-            game.draw(True)
+            if display:
+                game.draw(True)
             game.loop()
+
+            if left_net:
+                self.handle_ai(self.left_paddle, left_net, game.handle_left)
+            if right_net:
+                self.handle_ai(self.right_paddle, right_net, game.handle_right)
+
             self.handle_keys(pygame.key.get_pressed())
-        
-        pygame.quit()
-
-    def test_ai(self, net):
-        clock = pygame.time.Clock()
-        run = True
-        while run:
-            clock.tick(60)
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-                    break
-
-            output = net.activate((self.right_paddle.y, self.ball.y, abs(self.right_paddle.x - self.ball.x)))
-            decision = output.index(max(output))
-            if decision == 1: self.game.handle_right(True)
-            elif decision == 2: self.game.handle_right(False)
-
-            game_info = self.game.loop()
-            self.handle_keys(pygame.key.get_pressed())
-            self.game.draw()
-
-    def train_ai(self, genome_1, genome_2, config):
-        run = True
-        net1 = neat.nn.FeedForwardNetwork.create(genome_1, config)
-        net2 = neat.nn.FeedForwardNetwork.create(genome_2, config)
-
-        self.game.start_ball()
-        while(run):
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    quit()
-
-            output_1 = net1.activate((self.left_paddle.y, self.ball.y, abs(self.left_paddle.x - self.ball.x)))
-            decision_1 = output_1.index(max(output_1))
-            if decision_1 == 1: self.game.handle_left(True)
-            elif decision_1 == 2: self.game.handle_left(False)
-
-            output_2 = net2.activate((self.right_paddle.y, self.ball.y, abs(self.right_paddle.x - self.ball.x)))
-            decision_2 = output_2.index(max(output_2))
-            if decision_2 == 1: self.game.handle_right(True)
-            elif decision_2 == 2: self.game.handle_right(False)
-
-            #self.game.draw(True)
-            stats = self.game.loop()
-
-            if(stats.left_score >= 1 or stats.right_score >= 1 or stats.left_hit >= 50):
-                self.calculate_fitenss(genome_1, genome_2, stats)
-                break
             
-    def calculate_fitenss(self, genome_1, genome_2, stats:GameStats):
-        genome_1.fitness += stats.left_hit
-        genome_2.fitness += stats.right_hit
 
+def calculate_fitenss(genome_1, genome_2, stats:GameStats):
+    genome_1.fitness += stats.left_hit
+    genome_2.fitness += stats.right_hit
 
 def eval_genomes(genomes, config):
     window = pygame.display.set_mode((1000, 850))
     for i, (genome_id_1, genome_1) in enumerate(genomes[:len(genomes)-1]):
         genome_1.fitness = 0
+        net1 = neat.nn.FeedForwardNetwork.create(genome_1, config)
         for (genome_id_2, genome_2) in genomes[i+1:len(genomes)]:
             if genome_2.fitness == None: genome_2.fitness = 0
             pong = PongGame(window)
-            pong.train_ai(genome_1, genome_2, config)
+            net2 = neat.nn.FeedForwardNetwork.create(genome_2, config)
+            pong.play(left_net=net1, right_net=net2, display=False, fps=0)
+            calculate_fitenss(genome_1, genome_2, pong.game_stats, 
+                              lambda : pong.game_stats.left_score == 1 or 
+                              pong.game_stats.right_score == 1 or 
+                              pong.game_stats.left_hit == 50)
+    pygame.quit()
 
 def test_best_network(config):
     with open("best.pickle", "rb") as f:
@@ -115,7 +86,8 @@ def test_best_network(config):
     win = pygame.display.set_mode((1000, 850))
 
     pong = PongGame(win)
-    pong.test_ai(winner_net)
+    pong.play(right_net=winner_net)
+    pygame.quit()
 
 def run_neat(config):
     #load checkpoint
