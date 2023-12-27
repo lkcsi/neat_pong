@@ -1,6 +1,6 @@
 class Paddle:
-    VEL = 4
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, vel):
+        self.vel = vel
         self.x = self.original_x = x
         self.y = self.original_y = y
         self.width = width
@@ -12,6 +12,6 @@ class Paddle:
 
     def move(self, up=True):
         if(up):
-            self.y -= self.VEL
+            self.y -= self.vel
         else:
-            self.y += self.VEL
+            self.y += self.vel

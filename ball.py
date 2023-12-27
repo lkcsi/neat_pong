@@ -1,5 +1,4 @@
 class Ball:
-    MAX_VEL = 6
     def __init__(self, x, y, radius):
         self.x = self.original_x = x
         self.y = self.original_y = y

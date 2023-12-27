@@ -22,8 +22,10 @@ class Game:
         paddle_height = self.height // 5
         padding = self.width // 50
         radius = self.height // 50
-        self.left_paddle = Paddle(padding, self.height // 2 - paddle_height // 2, paddle_width, paddle_height)
-        self.right_paddle = Paddle(self.width - padding - paddle_width, self.height // 2 - paddle_height // 2, paddle_width, paddle_height)
+        self.ball_vel = self.width // 100
+        self.paddle_vel = self.height // 100
+        self.left_paddle = Paddle(padding, self.height // 2 - paddle_height // 2, paddle_width, paddle_height, self.paddle_vel)
+        self.right_paddle = Paddle(self.width - padding - paddle_width, self.height // 2 - paddle_height // 2, paddle_width, paddle_height, self.paddle_vel)
         self.ball = Ball(self.width // 2, self.height // 2, radius)
 
 
@@ -65,9 +67,9 @@ class Game:
         self._handle_paddle(self.right_paddle, up)
 
     def _handle_paddle(self, paddle: Paddle, up:bool):
-        if up and paddle.y - Paddle.VEL >= 0:
+        if up and paddle.y - self.paddle_vel >= 0:
             paddle.move(True)
-        if not up and paddle.y + paddle.height + Paddle.VEL <= self.height:
+        if not up and paddle.y + paddle.height + self.paddle_vel <= self.height:
             paddle.move(False)
 
     def _range_map(self, x1, x2, y1, y2, num):
@@ -80,15 +82,15 @@ class Game:
 
     def _get_y_vel(self, paddle: Paddle):
         delta = self.ball.y - (paddle.y + paddle.height // 2)
-        return self._range_map(paddle.height // -2, paddle.height // 2, -1 * Ball.MAX_VEL, Ball.MAX_VEL, delta) 
+        return self._range_map(paddle.height // -2, paddle.height // 2, -1 * self.ball_vel, self.ball_vel, delta) 
 
     def start_ball(self):
         if(self.ball.x_vel == 0 and self.ball.y_vel == 0):
             result = 0
             while(result == 0):
-                result = uniform(-1 * Ball.MAX_VEL, Ball.MAX_VEL)
+                result = uniform(-1 * self.ball_vel, self.ball_vel)
             self.ball.y_vel = result
-            self.ball.x_vel = -1 * Ball.MAX_VEL
+            self.ball.x_vel = -1 * self.ball_vel
 
     def _handle_paddle_collision(self, paddle:Paddle):
         ball = self.ball
